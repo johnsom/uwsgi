@@ -95,22 +95,27 @@ uint64_t proto_base_add_uwsgi_var(struct wsgi_request * wsgi_req, char *key, uin
 
 
 int uwsgi_proto_base_accept(struct wsgi_request *wsgi_req, int fd) {
+	uwsgi_log("Entered: uwsgi_proto_base_accept\n");
 
 	wsgi_req->c_len = sizeof(struct sockaddr_un);
 #if defined(__linux__) && defined(SOCK_NONBLOCK) && !defined(OBSOLETE_LINUX_KERNEL)
+	uwsgi_log("Entered: uwsgi_proto_base_accept accept4 1\n");
         return accept4(fd, (struct sockaddr *) &wsgi_req->client_addr, (socklen_t *) & wsgi_req->c_len, SOCK_NONBLOCK);
 #elif defined(__linux__)
 	int client_fd = accept(fd, (struct sockaddr *) &wsgi_req->client_addr, (socklen_t *) & wsgi_req->c_len);
 	if (client_fd >= 0) {
 		uwsgi_socket_nb(client_fd);
 	}
+	uwsgi_log("Entered: uwsgi_proto_base_accept client_fd\n");
 	return client_fd;
 #else
+	uwsgi_log("Entered: uwsgi_proto_base_accept accept\n");
 	return accept(fd, (struct sockaddr *) &wsgi_req->client_addr, (socklen_t *) & wsgi_req->c_len);
 #endif
 }
 
 void uwsgi_proto_base_close(struct wsgi_request *wsgi_req) {
+	uwsgi_log("Entered: uwsgi_proto_base_close\n");
 	close(wsgi_req->fd);
 }
 
@@ -192,6 +197,7 @@ end:
 
 
 int uwsgi_proto_base_write(struct wsgi_request * wsgi_req, char *buf, size_t len) {
+	uwsgi_log("Entered: uwsgi_proto_base_write\n");
         ssize_t wlen = write(wsgi_req->fd, buf+wsgi_req->write_pos, len-wsgi_req->write_pos);
         if (wlen > 0) {
                 wsgi_req->write_pos += wlen;
@@ -212,6 +218,7 @@ int uwsgi_proto_base_write(struct wsgi_request * wsgi_req, char *buf, size_t len
 	NOTE: len is a pointer as it could be changed on the fly
 */
 int uwsgi_proto_base_writev(struct wsgi_request * wsgi_req, struct iovec *iov, size_t *len) {
+	uwsgi_log("Entered: uwsgi_proto_base_writev\n");
 	size_t i,needed = 0;
 	// count the number of bytes to write
 	for(i=0;i<*len;i++) needed += iov[i].iov_len;
@@ -219,6 +226,7 @@ int uwsgi_proto_base_writev(struct wsgi_request * wsgi_req, struct iovec *iov, s
         if (wlen > 0) {
 		wsgi_req->write_pos += wlen;
                 if ((size_t)wlen == needed) {
+	                uwsgi_log("Entered: uwsgi_proto_base_writev UWSGI_OK 1\n");
                         return UWSGI_OK;
                 }
 		// now the complex part, we need to rebuild iovec and len...
@@ -250,13 +258,16 @@ int uwsgi_proto_base_writev(struct wsgi_request * wsgi_req, struct iovec *iov, s
 			iov[pos].iov_len = iov[i].iov_len;
 			pos++;
 		}
+	        uwsgi_log("Entered: uwsgi_proto_base_writev UWSGI_AGAIN 1\n");
                 return UWSGI_AGAIN;
         }
         if (wlen < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINPROGRESS) {
+	                uwsgi_log("Entered: uwsgi_proto_base_writev UWSGI_AGAIN 2\n");
                         return UWSGI_AGAIN;
                 }
         }
+	uwsgi_log("Entered: uwsgi_proto_base_writev -1 final\n");
         return -1;
 }
 
@@ -298,6 +309,7 @@ retry:
 
 #endif
 int uwsgi_proto_base_sendfile(struct wsgi_request * wsgi_req, int fd, size_t pos, size_t len) {
+	uwsgi_log("Entered: uwsgi_proto_base_sendfile\n");
         ssize_t wlen = uwsgi_sendfile_do(wsgi_req->fd, fd, pos+wsgi_req->write_pos, len-wsgi_req->write_pos);
         if (wlen > 0) {
                 wsgi_req->write_pos += wlen;
@@ -354,6 +366,7 @@ int uwsgi_proto_base_fix_headers(struct wsgi_request * wsgi_req) {
 }
 
 ssize_t uwsgi_proto_base_read_body(struct wsgi_request *wsgi_req, char *buf, size_t len) {
+	uwsgi_log("Entered: uwsgi_proto_base_read_body\n");
 	if (wsgi_req->proto_parser_remains > 0) {
 		size_t remains = UMIN(wsgi_req->proto_parser_remains, len);
 		memcpy(buf, wsgi_req->proto_parser_remains_buf, remains);

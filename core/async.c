@@ -537,6 +537,7 @@ void async_loop() {
 				// proto event
 				uwsgi.wsgi_req = find_wsgi_req_proto_by_fd(interesting_fd);
 				if (uwsgi.wsgi_req) {
+					uwsgi_log("core/async.c got request\n");
 					proto_parser_status = uwsgi.wsgi_req->socket->proto(uwsgi.wsgi_req);
 					// reset timeout
 					async_reset_request(uwsgi.wsgi_req);

@@ -1446,10 +1446,14 @@ int wsgi_req_recv(int queue, struct wsgi_request *wsgi_req) {
 	if (!wsgi_req->socket->edge_trigger) {
 		for (;;) {
 			int ret = wsgi_req->socket->proto(wsgi_req);
-			if (ret == UWSGI_OK)
+			if (ret == UWSGI_OK) {
+                                uwsgi_log("core/utils.c wsgi_req_recv UWSGI_OK\n");
 				break;
+			}
 			if (ret == UWSGI_AGAIN) {
+                                uwsgi_log("core/utils.c wsgi_req_recv UWSGI_AGAIN\n");
 				ret = uwsgi_wait_read_req(wsgi_req);
+                                uwsgi_log("core/utils.c wsgi_req_recv UWSGI_AGAIN uwsgi_wait_read_req %u\n", ret);
 				if (ret <= 0)
 					return -1;
 				continue;

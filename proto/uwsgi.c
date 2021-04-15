@@ -5,21 +5,26 @@
 extern struct uwsgi_server uwsgi;
 
 static int uwsgi_proto_uwsgi_parser(struct wsgi_request *wsgi_req) {
+	uwsgi_log("Entered: uwsgi_proto_uwsgi_parser\n");
 	char *ptr = (char *) wsgi_req->uh;
 	ssize_t len = read(wsgi_req->fd, ptr + wsgi_req->proto_parser_pos, (uwsgi.buffer_size + 4) - wsgi_req->proto_parser_pos);
+        uwsgi_log("len: %u proto_parser_pos: %u\n", len, wsgi_req->proto_parser_pos);
 	if (len > 0) {
 		wsgi_req->proto_parser_pos += len;
 		if (wsgi_req->proto_parser_pos >= 4) {
 #ifdef __BIG_ENDIAN__
 			wsgi_req->uh->_pktsize = uwsgi_swap16(wsgi_req->uh->_pktsize);
 #endif
+			uwsgi_log("pktsize: %u\n", wsgi_req->uh->_pktsize);
 			wsgi_req->len = wsgi_req->uh->_pktsize;
 			if ((wsgi_req->proto_parser_pos - 4) == wsgi_req->uh->_pktsize) {
+	                        uwsgi_log("Entered: uwsgi_proto_uwsgi_parser UWSGI_OK 1\n");
 				return UWSGI_OK;
 			}
 			if ((wsgi_req->proto_parser_pos - 4) > wsgi_req->uh->_pktsize) {
 				wsgi_req->proto_parser_remains = wsgi_req->proto_parser_pos - (4 + wsgi_req->uh->_pktsize);
 				wsgi_req->proto_parser_remains_buf = wsgi_req->buffer + wsgi_req->uh->_pktsize;
+	                        uwsgi_log("Entered: uwsgi_proto_uwsgi_parser UWSGI_OK 2\n");
 				return UWSGI_OK;
 			}
 			if (wsgi_req->uh->_pktsize > uwsgi.buffer_size) {
@@ -27,10 +32,12 @@ static int uwsgi_proto_uwsgi_parser(struct wsgi_request *wsgi_req) {
 				return -1;
 			}
 		}
+	        uwsgi_log("Entered: uwsgi_proto_uwsgi_parser UWSGI_AGAIN 1\n");
 		return UWSGI_AGAIN;
 	}
 	if (len < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINPROGRESS) {
+	                uwsgi_log("Entered: uwsgi_proto_uwsgi_parser UWSGI_AGAIN 2\n");
 			return UWSGI_AGAIN;
 		}
 		uwsgi_error("uwsgi_proto_uwsgi_parser()");
@@ -40,6 +47,7 @@ static int uwsgi_proto_uwsgi_parser(struct wsgi_request *wsgi_req) {
 	if (wsgi_req->proto_parser_pos > 0) {
 		uwsgi_error("uwsgi_proto_uwsgi_parser()");
 	}
+	uwsgi_log("Entered: uwsgi_proto_uwsgi_parser -1 Final\n");
 	return -1;
 }
 
@@ -214,6 +222,7 @@ int uwsgi_proto_uwsgi_parser_unix(struct wsgi_request *wsgi_req) {
 */
 
 void uwsgi_proto_uwsgi_setup(struct uwsgi_socket *uwsgi_sock) {
+	uwsgi_log("Entered: uwsgi_proto_uwsgi_setup\n");
 	uwsgi_sock->proto = uwsgi_proto_uwsgi_parser;
 	uwsgi_sock->proto_accept = uwsgi_proto_base_accept;
 	uwsgi_sock->proto_prepare_headers = uwsgi_proto_base_prepare_headers;

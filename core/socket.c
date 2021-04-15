@@ -436,6 +436,7 @@ static int connect_to_unix(char *socket_name, int timeout, int async) {
 	if (timed_connect(&uwsgi_poll, (const struct sockaddr *) &uws_addr, un_size, timeout, async)) {
 		// avoid error storm
 		//uwsgi_error("connect()");
+		uwsgi_log("L439 - timed_connect\n");
 		close(uwsgi_poll.fd);
 		return -1;
 	}
@@ -1265,6 +1266,7 @@ void uwsgi_add_socket_from_fd(struct uwsgi_socket *uwsgi_sock, int fd) {
 void uwsgi_close_all_sockets() {
         struct uwsgi_socket *uwsgi_sock = uwsgi.sockets;
 
+        uwsgi_log("Entered uwsgi_close_all_sockets.\n");
         while (uwsgi_sock) {
                 if (uwsgi_sock->bound) {
                         close(uwsgi_sock->fd);
@@ -1276,6 +1278,7 @@ void uwsgi_close_all_sockets() {
 void uwsgi_shutdown_all_sockets() {
         struct uwsgi_socket *uwsgi_sock = uwsgi.sockets;
 
+        uwsgi_log("Entered uwsgi_shutdown_all_sockets.\n");
         while (uwsgi_sock) {
                 if (uwsgi_sock->bound) {
                         shutdown(uwsgi_sock->fd, SHUT_RDWR);
@@ -1288,6 +1291,7 @@ void uwsgi_shutdown_all_sockets() {
 void uwsgi_close_all_unshared_sockets() {
 	struct uwsgi_socket *uwsgi_sock = uwsgi.sockets;
 
+        uwsgi_log("Entered uwsgi_close_all_unshared_sockets.\n");
 	while (uwsgi_sock) {
 		if (uwsgi_sock->bound && !uwsgi_sock->shared)
 			close(uwsgi_sock->fd);
@@ -1530,6 +1534,7 @@ nextsock:
 
 	free(zerg_msg_control);
 
+        uwsgi_log("L1537 - Entered zergo client.\n");
 	close(zerg_client);
 
 }
@@ -1701,6 +1706,7 @@ void uwsgi_map_sockets() {
 		}
 
 		if (!enabled) {
+			uwsgi_log("L1709 - uwsgi_map_sockets close not enabled\n");
 			close(uwsgi_sock->fd);
 			uwsgi_remap_fd(uwsgi_sock->fd, "/dev/null");
 			uwsgi_sock->disabled = 1;
@@ -1834,6 +1840,7 @@ void uwsgi_bind_sockets() {
 					uwsgi_error("dup2()");
 					exit(1);
 				}
+				uwsgi_log("L1943 - closing\n");
 				close(fd);
 			}
 		}
